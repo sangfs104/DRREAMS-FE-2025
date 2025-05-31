@@ -1,238 +1,184 @@
 "use client";
-
 import { useState } from "react";
+import Image from "next/image";
 import "../css/login.css";
-import "boxicons/css/boxicons.min.css";
 
 export default function LoginPage() {
-  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const [registerData, setRegisterData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMessage, setForgotMessage] = useState("");
 
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: "",
-  });
+  const togglePassword = () => {
+    setShowPassword((prev) => !prev);
+  };
 
-  const apiUrl = "http://localhost:4000/users";
-
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     try {
-      const response = await fetch(apiUrl, {
+      const res = await fetch("http://localhost:8000/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...registerData,
-          phone: "",
-          role: "user",
-          remember_token: "",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (response.ok) {
-        alert("Đăng ký thành công! Vui lòng đăng nhập.");
-        setIsRegister(false);
+      const data = await res.json();
+
+      if (res.ok && data.status === 200) {
+        localStorage.setItem("user", JSON.stringify(data.data));
+        setMessage("Đăng nhập thành công!");
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
       } else {
-        alert("Đăng ký thất bại!");
+        setMessage(data.message || "Đăng nhập thất bại");
       }
-    } catch (error) {
-      alert("Lỗi hệ thống!");
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      setMessage("Lỗi kết nối đến server");
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setForgotMessage("");
+
     try {
-      const res = await fetch(apiUrl);
-      const users = await res.json();
-      const user = users.find(
-        (u: any) =>
-          u.email === loginData.email && u.password === loginData.password
-      );
-      if (user) {
-        alert(`Đăng nhập thành công. Xin chào ${user.name}`);
+      const res = await fetch("http://localhost:8000/api/forgotPassword", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.status === 200) {
+        setForgotMessage("✅ " + data.message);
       } else {
-        alert("Email hoặc mật khẩu không đúng!");
+        setForgotMessage("❌ " + (data.message || "Có lỗi xảy ra"));
       }
-    } catch (error) {
-      alert("Lỗi hệ thống!");
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      setForgotMessage("❌ Lỗi kết nối đến server");
     }
   };
 
   return (
-    <div>
-      <div className="background"></div>
-      <div className="container">
-        <div className="item">
-          <h2 className="logo">
-            <i className="bx bxl-xing"></i>DREAMS
-          </h2>
-          <div className="text-item">
-            <h2>
-              Chào mừng <br />
-              <span> trở lại! </span>
-            </h2>
-            <p>
-              Truy cập tài khoản của bạn và tiếp tục hành trình cùng chúng tôi.
-            </p>
-            <div className="social-icon">
-              <a href="#">
-                <i className="bx bxl-facebook"></i>
-              </a>
-              <a href="#">
-                <i className="bx bxl-twitter"></i>
-              </a>
-              <a href="#">
-                <i className="bx bxl-youtube"></i>
-              </a>
-              <a href="#">
-                <i className="bx bxl-instagram"></i>
-              </a>
-              <a href="#">
-                <i className="bx bxl-linkedin"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className={`login-section ${isRegister ? "active" : ""}`}>
-          <div className="form-box login">
-            <form onSubmit={handleLogin}>
-              <h2>Sign In</h2>
-              <div className="input-box">
-                <span className="icon">
-                  <i className="bx bxs-envelope"></i>
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={loginData.email}
-                  onChange={(e) =>
-                    setLoginData({ ...loginData, email: e.target.value })
-                  }
-                />
-                <label>Email</label>
-              </div>
-              <div className="input-box">
-                <span className="icon">
-                  <i className="bx bxs-lock-alt"></i>
-                </span>
-                <input
-                  type="password"
-                  required
-                  value={loginData.password}
-                  onChange={(e) =>
-                    setLoginData({ ...loginData, password: e.target.value })
-                  }
-                />
-                <label>Password</label>
-              </div>
-              <div className="remember-password">
-                <label>
-                  <input type="checkbox" />
-                  Remember Me
-                </label>
-                <a href="#">Forget Password</a>
-              </div>
-              <button className="btn" type="submit">
-                Login In
-              </button>
-              <div className="create-account">
-                <p>
-                  Create A New Account?{" "}
-                  <a
-                    href="#"
-                    className="register-link"
-                    onClick={() => setIsRegister(true)}
-                  >
-                    Sign Up
-                  </a>
-                </p>
-              </div>
-            </form>
-          </div>
-
-          <div className="form-box register">
-            <form onSubmit={handleRegister}>
-              <h2>Sign Up</h2>
-              <div className="input-box">
-                <span className="icon">
-                  <i className="bx bxs-user"></i>
-                </span>
-                <input
-                  type="text"
-                  required
-                  value={registerData.name}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, name: e.target.value })
-                  }
-                />
-                <label>Username</label>
-              </div>
-              <div className="input-box">
-                <span className="icon">
-                  <i className="bx bxs-envelope"></i>
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={registerData.email}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, email: e.target.value })
-                  }
-                />
-                <label>Email</label>
-              </div>
-              <div className="input-box">
-                <span className="icon">
-                  <i className="bx bxs-lock-alt"></i>
-                </span>
-                <input
-                  type="password"
-                  required
-                  value={registerData.password}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      password: e.target.value,
-                    })
-                  }
-                />
-                <label>Password</label>
-              </div>
-              <div className="remember-password">
-                <label>
-                  <input type="checkbox" />I agree with this statement
-                </label>
-              </div>
-              <button className="btn" type="submit">
-                Login In
-              </button>
-              <div className="create-account">
-                <p>
-                  Already Have An Account?{" "}
-                  <a
-                    href="#"
-                    className="login-link"
-                    onClick={() => setIsRegister(false)}
-                  >
-                    Sign In
-                  </a>
-                </p>
-              </div>
-            </form>
-          </div>
-        </div>
+    <div className="container">
+      <div className="image-section">
+        <Image
+          src="/img/dir.webp"
+          alt="shopping illustration"
+          width={400}
+          height={400}
+        />
       </div>
+      <div className="login-section">
+        <h2>Đăng nhập</h2>
+        <p className="sub">Đăng nhập tài khoản mua sắm nhiều ưu đãi</p>
+
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="example@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <label htmlFor="password">Mật khẩu</label>
+          <div className="password-field">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              className="password-input"
+              placeholder="*********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <span className="eye-icon" onClick={togglePassword}>
+              <i
+                className={`fa-solid ${
+                  showPassword ? "fa-eye-slash" : "fa-eye"
+                }`}
+              ></i>
+            </span>
+          </div>
+
+          <div className="forgot">
+            <a href="#" onClick={() => setShowForgotModal(true)}>
+              Quên mật khẩu?
+            </a>
+          </div>
+
+          <button type="submit" className="login-btn">
+            Đăng nhập
+          </button>
+
+          {message && <p>{message}</p>}
+        </form>
+
+        <p className="register">
+          Bạn chưa có tài khoản? <a href="/register">Đăng ký</a>
+        </p>
+
+        <div className="divider">Hoặc</div>
+
+        <button className="google-btn">
+          <div className="google-icon-wrapper">
+            <Image
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google"
+              width={20}
+              height={20}
+            />
+          </div>
+          <span className="google-text">Đăng nhập bằng Google</span>
+        </button>
+      </div>
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Khôi phục mật khẩu</h3>
+            <form onSubmit={handleForgotPassword}>
+              <label htmlFor="forgot-email">Nhập email</label>
+              <input
+                type="email"
+                id="forgot-email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+              />
+              <button type="submit">Gửi yêu cầu</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotModal(false);
+                  setForgotEmail("");
+                  setForgotMessage("");
+                }}
+              >
+                Đóng
+              </button>
+            </form>
+            {forgotMessage && <p>{forgotMessage}</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
